@@ -1,0 +1,140 @@
+import pyaudio
+import wave
+import array as arr
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+import numpy as np
+import scipy as sp
+from scipy.signal import find_peaks
+
+# WIFI/SOCKET START
+import socket # to connect to C++ robot code 
+import struct
+import time
+
+ip = '' # Bind to all network interfaces
+port = 3333
+max_buffer_size  = 1024
+
+if __name__ == '__main__':
+    UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+    UDPServerSocket.bind((ip, port))
+
+    while True:
+        (message, ip_address) = UDPServerSocket.recvfrom(max_buffer_size)
+        print('Message received: {}'.format(message))
+
+        # Send two floating point numbers back
+        x = [1.234, 5.678]
+        print('Sending {}'.format(x))
+        x = struct.pack("ff", x[0], x[1])
+        UDPServerSocket.sendto(x, ip_address)
+
+
+fs = 44100 # samples per second
+FORMAT = pyaudio.paInt16 # 16 bits per sample
+#Audio Channels
+CHANNELS = 1 #1 microphone
+#CHANNELS = 2 # 2 microphones
+chunk = 1024 # record in chunks of 1024 samples
+filename = "output.wav"
+
+#def callback(in_data, frame_count, time_info, status):
+ #   data = np.frombuffer(in_data, dtype=np.Int16)
+  #  print(data)
+
+#SOCKET CONNECTION
+HOST = 'localhost' #IP address of C++ program
+PORT = 12345 #port # to use
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock.bind((HOST, PORT))
+sock.listen(1)
+conn, addr = sock.accept()
+
+
+#2 MICS
+#Device info for each mic
+# audio = pyaudio.PyAudio()
+# device_indexes = [0,1] #2 mics, [0,1,2] #3 mics
+# devices = [audio.get_device_info_by_host_api_device_index(i) for i in device_indexes]
+
+#open audio streams for each mic
+
+#1
+audio = pyaudio.PyAudio() 
+stream = audio.open(format=FORMAT,
+                    channels=CHANNELS,
+                    rate=fs,
+                    input=True,
+                    frames_per_buffer=chunk)
+
+frames = [] # stores recorded data
+# Store data in chunks for 3 seconds
+for i in range(0, int(fs/ chunk * 5)):
+    data = stream.read(chunk)
+    frames.append(data)
+
+# Stop and close the stream
+stream.stop_stream()
+stream.close()
+audio.terminate()
+
+
+#Create Theta Array
+theta = arr.array('d', [0] * 20) #syntax might be wrong
+
+##FINDING THE PEAK VOLUME TO FIND THETA
+#2+ mics
+
+#1 MIC
+#theta = 0; #SHOULD THETA BE CONTROLLED IN PYTHON CODE OR C++? 
+wf = wave.open(filename, 'wb')
+wf.setnchannels(CHANNELS)
+wf.setsampwidth(audio.get_sample_size(FORMAT))
+wf.setframerate(fs)
+wf.writeframes(b''.join(frames))
+wf.close()
+
+spf = wave.open("output.wav", "r")
+sig1 = spf.readframes(-1)
+sig1 = np.frombuffer(sig1, dtype=np.int16)
+fs = spf.getframerate()
+Time = np.linspace(0, len(sig1) / fs, num=len(sig1))
+
+plt.figure(1)
+plt.title("Signal Wave...")
+plt.plot(Time, sig1)
+#plt.show()
+# Start animation
+
+
+peaks, _ = find_peaks(sig1,prominence=1) #try without prominence
+maxpeak = peaks[np.argmax(sig1[peaks])]
+xmax = Time[maxpeak] #time that max occurs
+print('Max peak occurs at time= ', xmax)
+plt.figure(2)
+plt.title("Max Peak")
+plt.plot(Time,sig1)
+plt.plot(Time[peaks],sig1[peaks], 'x'); #plt.plot(signal); plt.legend(['prominence'])
+#plt.axvline(Time=xmax, ls='--', color="k")
+plt.show()
+
+
+
+#The position of mouse at xmax is where we want it to rotate to for the starting position
+
+#INITIAL 360 SPIN
+#left wheel fwd, right wheel bkwd at constant speed
+#constantly update theta position
+#at each peak found, update thetamax
+#if(peak) thetamax = theta *FIRST TIME
+#maxpeak = peak *FIRST TIME
+#when max peak is found, save thetamax
+#if(peak>maxpeak) maxpeak = peak; thetamax = theta
+#when 360 is finished, return to thetamax
+#move on to other code (CROSS CORRELATION)
+
+#begin recording of all 3 microphones
+#store 3 signals as 3 different functions
+#use cross correlation to compare functions, find time delay
+#use time delay to triangulate/find angles
