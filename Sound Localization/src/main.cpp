@@ -15,7 +15,6 @@
 
 /* WIFI BEGIN
  *  This sketch sends random data over UDP on a ESP32 device
- *
  */
 #include <WiFi.h>
 #include <WiFiUdp.h>
@@ -70,44 +69,6 @@ void connectToWiFi(const char * ssid, const char * pwd){
 
   Serial.println("Waiting for WIFI connection...");
 }
-
-
-// void setup(){
-//   // Initilize hardware serial:
-//   Serial.begin(115200);
-  
-//   // Stop the right motor by setting pin 14 low
-//   // this pin floats high or is pulled
-//   // high during the bootloader phase for some reason
-//   pinMode(14, OUTPUT);
-//   digitalWrite(14, LOW);
-//   delay(100);
-
-//   //Connect to the WiFi network
-//   connectToWiFi(networkName, networkPswd);
-// }
-
-// void loop(){
-//   //only send data when connected
-//   if(connected){
-//     //Send a packet
-//     udp.beginPacket(udpAddress,udpPort);
-//     udp.printf("Seconds since boot: %lu", millis()/1000);
-//     udp.endPacket();
-
-//     //Checks for packet and obtains its contents
-//     int packetSize = udp.parsePacket();
-//     if(packetSize >= sizeof(float))
-//     {
-//       float x[2];
-//       udp.read((char*)x, sizeof(x)); 
-//       udp.flush();
-//       Serial.printf("x is %f %f\n", x[0], x[1]); //CHANGE TO SEND THETA 
-//     }
-//   }
-//   delay(100);
-// }
-//////WIFI END
 
 // IMU (rotation rate and acceleration)
 Adafruit_MPU6050 mpu;
@@ -243,15 +204,13 @@ float update_pid(float dt, float kp, float ki, float kd,
   float u = kp * e + ki * int_e + kd * de;
   return u;
 }
-
-// a smooth and interesting trajectory
-// https://en.wikipedia.org/wiki/Lemniscate_of_Bernoulli
 void leminscate_of_bernoulli(float t, float a, float& x, float& y) {
   float sin_t = sin(t);
   float den = 1 + sin_t * sin_t;
   x = a * cos(t) / den;
   y = a * sin(t) * cos(t) / den;
 }
+
 
 // Signed angle from (x0, y0) to (x1, y1)
 // assumes norms of these quantities are precomputed
@@ -269,9 +228,17 @@ float signed_angle(float x0, float y0, float n0, float x1, float y1, float n1) {
 }
 
 void setup() {
+  // Stop the right motor by setting pin 14 low
+  // this pin floats high or is pulled
+  // high during the bootloader phase for some reason
+  pinMode(14, OUTPUT); 
+  digitalWrite(14, LOW);
+  delay(100);
+  
   Serial.begin(115200);
+  delay(10);
 
-  // Disalbe the lightbar ADC chips so they don't hold the SPI bus used by the IMU
+  // Disable the lightbar ADC chips so they don't hold the SPI bus used by the IMU
   pinMode(ADC_1_CS, OUTPUT);
   pinMode(ADC_2_CS, OUTPUT);
   digitalWrite(ADC_1_CS, HIGH);
@@ -284,43 +251,13 @@ void setup() {
   configure_motor_pins();
   configure_imu();
 
-  Serial.println("Starting!");
-
-//Wifi Setup
-    // Initilize hardware serial:
-  Serial.begin(115200);
-  
-  // Stop the right motor by setting pin 14 low
-  // this pin floats high or is pulled
-  // high during the bootloader phase for some reason
-  pinMode(14, OUTPUT);
-  digitalWrite(14, LOW);
-  delay(100);
-
-  //Connect to the WiFi network
+//Wifi Setup - Connect to the WiFi network
   connectToWiFi(networkName, networkPswd);
+  
 }
 
 void loop() {
-  //only send data when connected
-  if(connected){
-    //SEND PACKET
-    udp.beginPacket(udpAddress,udpPort);
-    udp.printf("Seconds since boot: %lu", millis()/1000); //CHANGE TO SEND THETA 
-    udp.endPacket();
 
-//RECEIVE PACKET
-    //Checks for packet and obtains its contents
-    int packetSize = udp.parsePacket();
-    if(packetSize >= sizeof(float))
-    {
-      float x[2];
-      udp.read((char*)x, sizeof(x)); 
-      udp.flush();
-      Serial.printf("x is %f %f\n", x[0], x[1]); 
-    }
-  }
-  delay(100);
 
   // Create the encoder objects after the motor has
   // stopped, else some sort exception is triggered
@@ -328,7 +265,7 @@ void loop() {
   Encoder enc2(M2_ENC_A, M2_ENC_B);
 
   // Loop period
-  int target_period_ms = 2; // Loop takes about 3 ms so a delay of 2 gives 200 Hz or 5ms
+  int target_period_ms = 1; // Loop takes about 3 ms so a delay of 2 gives 200 Hz or 5ms
 
   // States used to calculate target velocity and heading
   float leminscate_a = 0.5; // Radius
@@ -341,7 +278,6 @@ void loop() {
   float last_dy = (y0 - last_y) / ((float)target_period_ms / 1000.0);
   float last_target_v = sqrtf(last_dx * last_dx + last_dy * last_dy);
   float target_theta = 0.0; // This is an integrated quantity
-
   // Motors are controlled by a position PID
   // with inputs interpreted in meters and outputs interpreted in volts
   // integral term has "anti-windup"
@@ -385,7 +321,7 @@ void loop() {
     float dt = ((float)(t - last_t)); // Calculate time since last update
     // Serial.print("t "); Serial.print(t);
     Serial.print(" dt "); Serial.print(dt * 1000.0);
-    last_t = t;
+    last_t = t; //SEND TIME OF THETA
 
     // Get the distances the wheels have traveled in meters
     // positive is forward
@@ -408,25 +344,65 @@ void loop() {
     // Calculate target forward velocity and target heading to track the leminscate trajectory
     // of 0.5 meter radius
     float x, y;
-    leminscate_of_bernoulli(leminscate_t_scale * t, leminscate_a, x, y);
-
-
-
+   leminscate_of_bernoulli(leminscate_t_scale * t, leminscate_a, x, y);
     float dx = (x - last_x) / dt;
     float dy = (y - last_y) / dt;
 
     // SPEED OF ROBOT
-    float target_v = .1;  // sqrtf(dx * dx + dy * dy); // forward velocity
+    float target_v = 0;//sqrtf(dx * dx + dy * dy); // forward velocity
 
 
 
     // Compute the change in heading using the normalized dot product between the current and last velocity vector
     // using this method instead of atan2 allows easy smooth handling of angles outsides of -pi / pi at the cost of
     // a slow drift defined by numerical precision
-    float target_omega = signed_angle(last_dx, last_dy, last_target_v, dx, dy, target_v) / dt;
+   // float target_omega = signed_angle(last_dx, last_dy, last_target_v, dx, dy, target_v) / dt;
 
     // TURN ROBOT
-    target_theta = 0; //target_theta + target_omega * dt;
+   //for(int i=0; i<90; i++) {
+    //target_omega = i;
+    //float target_omega= M_PI_2*i; //target_theta + target_omega * dt; //THETA IS IN RADIANS
+    //delay(50);
+
+    float target_omega= M_PI_4; 
+   
+
+
+
+
+
+
+//    // target_theta = 0; //target_theta + target_omega * dt;
+//     float maxtheta[2]; 
+
+  //only send data when connected
+  if(connected){
+    //SEND PACKET
+    udp.beginPacket(udpAddress,udpPort);
+    udp.printf("%lu %lu", target_theta, t); //prints theta and corresponding time t to Jetson SHOULD THESE BE %lu
+    udp.endPacket();
+  }
+// //RECEIVE PACKET
+//     //Checks for packet and obtains its contents
+//     int packetSize = udp.parsePacket();
+//     if(packetSize >= sizeof(float)) //& if target_theta != 0;
+//     {
+//       //float maxtheta[2]; //store only 1 maxtheta, THIS ISN'T WORKING: NEED ARRAY OF MAXTHETA maxtheta[0] will be 0
+//       udp.read((char*)maxtheta, sizeof(maxtheta)); //need the (char*)
+//       udp.flush();
+//       // target_theta = maxtheta; //ASSIGN THETA TO MAX AMP THETA
+//       //Serial.printf("x is %f %f\n", x[0], x[1]); 
+//     }
+//   }
+
+//   //AFTER 360 SPIN IS FINISHED
+//   //ROBOT COMES TO STOP
+
+//   target_theta = maxtheta[1]; //ASSIGN THETA TO MAX AMP THETA
+
+
+
+
 
 
     last_x = x;
@@ -464,10 +440,9 @@ void loop() {
     left_voltage = right_voltage + kf_right * target_v_right;
     float right_pwm = (float)MAX_PWM_VALUE * (right_voltage / 8.0); // TODO use actual battery voltage
 
-
-    set_motors_pwm(left_pwm, right_pwm);
-
+   set_motors_pwm(left_pwm, right_pwm);
     // Serial.println();
     delay(target_period_ms);
+   //}//from for loop that changes thetas
   }
 }
