@@ -315,7 +315,11 @@ void loop() {
   float last_t = -target_period_ms / 1000.0; // Offset by expected looptime to avoid divide by zero
 
   // MAIN LOOP
-  while (true) {
+  while (connected == true) { //Change
+  //while wifi udp is connected? and then we can do while/for loop to spin (theta from 0-2pi), then another loop within overall while to do the next actions and so on
+  //At end, if statement that disconnects UDP so we exit while(connected) loop
+  // if(mouse is found) disconnect UDP
+    
     // Get the time elapsed
     float t = ((float)micros()) / 1000000.0 - start_t;
     float dt = ((float)(t - last_t)); // Calculate time since last update
@@ -339,7 +343,7 @@ void loop() {
     read_imu(omega); // Could be expanded to read more things
     omega -= bias_omega; // Remove the constant bias measured in the beginning
     theta = theta + omega * dt;
-
+   
 
     // Calculate target forward velocity and target heading to track the leminscate trajectory
     // of 0.5 meter radius
@@ -351,18 +355,24 @@ void loop() {
     // SPEED OF ROBOT
     float target_v = 0;//sqrtf(dx * dx + dy * dy); // forward velocity
 
-
+    while(target_theta <= 2*M_PI){ //loop for initial spin; not sure where this should be in relation to setting all these variables
 
     // Compute the change in heading using the normalized dot product between the current and last velocity vector
     // using this method instead of atan2 allows easy smooth handling of angles outsides of -pi / pi at the cost of
     // a slow drift defined by numerical precision
    // float target_omega = signed_angle(last_dx, last_dy, last_target_v, dx, dy, target_v) / dt;
 
-    // TURN ROBOT
+      //if(target ){ //CHANGE if theta is between 0 and 2pi, or dont even need?
+    // TURN ROBOT, probably need to include a lot more from below in this if
    //for(int i=0; i<90; i++) {
     //target_omega = i;
     //float target_omega= M_PI_2*i; //target_theta + target_omega * dt; //THETA IS IN RADIANS
     //delay(50);
+    //SEND PACKET
+    udp.beginPacket(udpAddress,udpPort);
+    udp.printf("%lu %lu", target_theta, t); //prints theta and corresponding time t to Jetson SHOULD THESE BE %lu
+    udp.endPacket();
+  //}
 
     float target_omega= M_PI_4; 
    
@@ -372,28 +382,10 @@ void loop() {
 
 
 
-//    // target_theta = 0; //target_theta + target_omega * dt;
+    target_theta = target_theta + target_omega * dt;
 //     float maxtheta[2]; 
 
   //only send data when connected
-  if(connected){
-    //SEND PACKET
-    udp.beginPacket(udpAddress,udpPort);
-    udp.printf("%lu %lu", target_theta, t); //prints theta and corresponding time t to Jetson SHOULD THESE BE %lu
-    udp.endPacket();
-  }
-// //RECEIVE PACKET
-//     //Checks for packet and obtains its contents
-//     int packetSize = udp.parsePacket();
-//     if(packetSize >= sizeof(float)) //& if target_theta != 0;
-//     {
-//       //float maxtheta[2]; //store only 1 maxtheta, THIS ISN'T WORKING: NEED ARRAY OF MAXTHETA maxtheta[0] will be 0
-//       udp.read((char*)maxtheta, sizeof(maxtheta)); //need the (char*)
-//       udp.flush();
-//       // target_theta = maxtheta; //ASSIGN THETA TO MAX AMP THETA
-//       //Serial.printf("x is %f %f\n", x[0], x[1]); 
-//     }
-//   }
 
 //   //AFTER 360 SPIN IS FINISHED
 //   //ROBOT COMES TO STOP
@@ -444,5 +436,20 @@ void loop() {
     // Serial.println();
     delay(target_period_ms);
    //}//from for loop that changes thetas
-  }
-}
+    } //while(target_theta<2pi) loop
+    //END OF INITIAL SPIN
+       //RECEIVE PACKET
+        //Checks for packet and obtains its contents
+        int packetSize = udp.parsePacket();
+        if(packetSize >= sizeof(float)) //CHANGE? condition is ok, but HOW TO MAKE SURE PACKET ISNT CONTINUOUSLY READ, WE ONLY NEED THE ONE VALUE THAT WONT CHANGE
+        {
+          float maxtheta[2]; //store only 1 maxtheta, NEED ARRAY OF MAXTHETA maxtheta[0] will be 0
+          udp.read((char*)maxtheta, sizeof(maxtheta)); //need the (char*)
+          udp.flush();
+          // target_theta = maxtheta; //ASSIGN THETA TO MAX AMP THETA
+          //Serial.printf("x is %f %f\n", x[0], x[1]); 
+        }
+      }
+
+  } //while(connected == true ) loop
+} //void loop()
