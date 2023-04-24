@@ -247,8 +247,7 @@ void setup() {
   configure_imu();
 
 //Wifi Setup - Connect to the WiFi network
-  connectToWiFi(networkName, networkPswd);
-  
+  connectToWiFi(networkName, networkPswd); 
 }
 
 void loop() {
@@ -310,7 +309,7 @@ void loop() {
   float last_t = -target_period_ms / 1000.0; // Offset by expected looptime to avoid divide by zero
 
   // MAIN LOOP
-  while (true) {//(connected == true) { //Change
+  while (true) {
   //while wifi udp is connected? 
   //At end, if statement that disconnects UDP so we exit while(connected) loop ( if(mouse is found) disconnect UDP )
     int t_start = micros();
@@ -354,25 +353,26 @@ void loop() {
    // float target_omega = signed_angle(last_dx, last_dy, last_target_v, dx, dy, target_v) / dt;
 
   
-  float maxtheta[2]; //store only 1 maxtheta, NEED ARRAY OF MAXTHETA maxtheta[0] will be 0
+    float maxtheta[2]; //store only 1 maxtheta, NEED ARRAY OF MAXTHETA maxtheta[0] will be 0
     float target_v = 0;//sqrtf(dx * dx + dy * dy); // SPEED OF ROBOT
-    float target_omega= signed_angle(last_dx, last_dy, last_target_v, dx, dy, target_v) / dt; 
+    float target_omega;//= signed_angle(last_dx, last_dy, last_target_v, dx, dy, target_v) / dt; 
     int state = 0; //STATE 0 = INITIAL SPIN
     //STATE MACHINE!!!
-    if(state = 0){ //Initial spin
-      target_omega = M_PI_4; //increment by pi/4
+    if(state == 0){ //Initial spin
+      target_omega = M_PI_2; //increment by pi/4 CHANGED TO pi/2 FOR TEST
       target_theta = target_theta + target_omega * dt;
        //SEND PACKET
       udp.beginPacket(udpAddress,udpPort);
       udp.printf("%lu %lu", target_theta, t); //prints theta and corresponding time t to Jetson SHOULD THESE BE %lu
       udp.endPacket();
+      Serial.print("theta = "); Serial.println(target_theta);
       if(target_theta>=2*M_PI) { //IF 360deg IS COMPLETE
-        target_theta = 0;
+        //target_theta = 0;
         state = 1; // GO TO NEXT STATE
       }
     } //if state 0 (initial spin)
 
-    else if(state =1){ //STATE 1= RECEIVE PACKET, SPIN TO THAT THETA
+    else if(state ==1){ //STATE 1= RECEIVE PACKET, SPIN TO THAT THETA
         //RECEIVE PACKET
         int packetSize = udp.parsePacket();
         if(packetSize >= sizeof(float)){
@@ -385,8 +385,8 @@ void loop() {
         target_theta = target_theta + target_omega * dt;
         state = 2; //GO TO NEXT STATE
     }
-    
-    else if(state = 2){ //MOVE FORWARD '2' SECONDS, SEND SOMETHING TO MAKE PYTHON RECORD SOUND AGAIN AND CROSS CORRELATE 3 MICS (GO TO SPECIFIC PART OF PYTHON CODE)
+
+    else if(state == 2){ //MOVE FORWARD '2' SECONDS, SEND SOMETHING TO MAKE PYTHON RECORD SOUND AGAIN AND CROSS CORRELATE 3 MICS (GO TO SPECIFIC PART OF PYTHON CODE)
       target_theta = target_theta; //PROBABLY DON'T NEED JUST WANNA MAKE SURE IT STAYS AT THIS ANGLE
       target_v = 1;//Move forward
       
@@ -394,7 +394,6 @@ void loop() {
       //rotate to that angle (DIFFERENT STATE?)
     }
     //target_theta = target_theta + target_omega * dt; //should be in each state
-    Serial.println("theta = "); Serial.print(target_theta);
 
   //only send data when connected
 
