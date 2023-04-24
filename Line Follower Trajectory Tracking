@@ -335,7 +335,7 @@ void loop() {
     if(adc1_buf[3]<650){//middle sensor 7 is over white line, go straight
       target_omega = 0;
       target_v= .1;
-      target_theta = target_theta + target_omega * dt;
+      target_theta = target_theta + target_omega *dt;
     }
     else if(adc1_buf[3]>650 && adc2_buf[3]>600){ // middle is DARK, sens8 is dark, needs to turn right
       target_v=0;
