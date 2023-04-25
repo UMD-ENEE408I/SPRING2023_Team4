@@ -31,26 +31,26 @@ theta_list =[[0],[0]] #[time],[theta]: list to store all values of theta sent ov
 i = 0 #initialize incrementing variable
 maxtheta = arr.array('d', [0] * 2) #only need two elements, initial 0 and final maxtheta
 state = 0 #State machine State 0 = initial spin
-ip_address = 0; sig1 = 0; sig1_rms = 0; audio = 0; frames = 0; theta = 0
+ip_address = 0; sig3 = 0; sig3_rms = 0; audio = 0; frames = 0; theta = 0
 #START GETTING VALUES OF THETA
 while __name__ == '__main__':
     UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
     UDPServerSocket.bind((ip, port))
-    theta = 1 #set theta != 0 so we can enter while loop
+   
     if state == 0:
         #initial spin, receive and record
 
         #START RECORDING, WHEN WE START GETTING VALUES OF THETA 
         #1 mic
         audio = pyaudio.PyAudio() 
-        stream = audio.open(format=FORMAT,
+        stream3 = audio.open(format=FORMAT,
                             channels=CHANNELS,
                             rate=fs,
                             input=True,
                             frames_per_buffer=chunk)
 
         frames = [] # stores recorded data
-        sig1_rms = [] #stores rms values of signal
+        sig3_rms = [] #stores rms values of signal
         # Store data in chunks for 5 seconds
         while (theta<2*np.pi): #until theta equals 2pi #int(fs/ chunk * 5)): #change number w/ chunk * to change recording length
 
@@ -64,24 +64,25 @@ while __name__ == '__main__':
             theta = float(theta_str) # convert string to float number
             t = float(time_str) #convert string to float
         
+            print('Message received: {}'.format(theta_str)) #prints theta as string
+            #Record
+            data = stream3.read(chunk)
+            sig3 = np.frombuffer(data, dtype=np.int16) # DO I NEED? converts signal to numpy array
+            sig3 = sig3.astype(np.float64)
+            rms3 = np.sqrt(np.mean(sig3**2))
+            sig3_rms.append(rms3)
+            frames.append(data)
+
             #REMEMBER: theta_list[i][0] = 0, extended after this first value of 0
             theta_list[0].extend([t]) #extend with new time 
             theta_list[1].extend([theta]) #extend with new theta
 
-            print('Message received: {}'.theta_str) #prints theta as string
-            #Record
-            data = stream.read(chunk)
-            sig1 = np.frombuffer(sig1, dtype=np.int16) # DO I NEED? converts signal to numpy array
-            sig1 = sig1.astype(np.float64)
-            rms = np.sqrt(np.mean(sig1**2))
-            sig1_rms.append(rms)
-            frames.append(data)
 
         # Stop and close the stream
-        stream.stop_stream()
-        stream.close()
+        stream3.stop_stream()
+        stream3.close()
         audio.terminate()
-        sig1_rms = np.array(sig1_rms) #convert list to array so we can get index for peaks
+        sig3_rms = np.array(sig3_rms) #convert list to array so we can get index for peaks
         maxtheta[0] = 0 
         state = 1 #NEXT STATE
     elif state == 1: #Plot sound and find peaks and maxtime/maxtheta
@@ -99,7 +100,7 @@ while __name__ == '__main__':
         #sig1 = np.frombuffer(sig1, dtype=np.int16) # HERE OR ABOVE? converts signal to numpy array
         #sig1_rms = np.sqrt(np.mean(sig1**2))
         fs = spf.getframerate()
-        Time = np.linspace(0, len(sig1_rms) / fs, num=len(sig1_rms))
+        Time = np.linspace(0, len(sig3_rms) / fs, num=len(sig3_rms))
         #Filter Mic signal NORM OF LAST 100s
         # def normalize(x,axis = 0):
         #     return sklearn.preprocessing.minmax_scale(x,axis=axis)
@@ -107,17 +108,17 @@ while __name__ == '__main__':
         #SIGNALS MUST BE DOWNSAMPLED TO THE SAMPLING RATE OF THE UDP
 
         #This line has not been tested, the rest of getting signal, converting to volume, finding peaks WORKS
-        sig1_inp = interp1d(theta_list[0],sig1_rms, kind = 'nearest') #theta_list[0]=thetalist time, sig1=mic signal Try other kinds to see accuracy
+        sig3_inp = interp1d(theta_list[0],sig3_rms, kind = 'nearest') #theta_list[0]=thetalist time, sig1=mic signal Try other kinds to see accuracy
         
         
         plt.figure(1)
         plt.title("Signal Wave")
         # plt.plot(Time, sig1) #Amplitude of frequency
-        plt.plot(Time, sig1_rms, color='r')
+        plt.plot(Time, sig3_rms, color='r')
         #plt.show()
         # Start animation
-        peaks, _ = find_peaks(sig1_rms,prominence=1) #try without prominence
-        maxpeak = peaks[np.argmax(sig1_rms[peaks])]
+        peaks, _ = find_peaks(sig3_rms,prominence=1) #try without prominence
+        maxpeak = peaks[np.argmax(sig3_rms[peaks])]
         xmax = Time[maxpeak] #time that max occurs
         #find element in theta_list that corresponds to time xmax
         for i in range(len(theta_list)):
@@ -128,7 +129,7 @@ while __name__ == '__main__':
         plt.figure(2)
         plt.title("Max Peak")
         #plt.plot(Time,sig1) #Plot amplitude of frequency
-        plt.plot(Time[peaks],sig1[peaks], 'x'); #plt.plot(signal); plt.legend(['prominence'])
+        plt.plot(Time[peaks],sig3[peaks], 'x'); #plt.plot(signal); plt.legend(['prominence'])
         #plt.axvline(Time=xmax, ls='--', color="k")
         plt.show()
         state = 2 # GO TO NEXT STATE

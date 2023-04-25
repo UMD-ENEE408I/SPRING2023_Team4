@@ -21,10 +21,10 @@ const char * networkPswd = "goterps2022";
 //IP address to send UDP data to:
 // either use the ip address of the server or 
 // a network broadcast address
-const char * udpAddress = "192.168.2.10";
-const int udpPort = 3333;
+const char * udpAddress = "192.168.2.114"; //NEED TO CHECK
+const int mouse1_udpPort = 3333; 
+const int mouse2_udpPort = 3334;
 
-//Are we currently connected?
 boolean connected = false;
 
 //The udp library class
@@ -40,7 +40,7 @@ void WiFiEvent(WiFiEvent_t event){
           Serial.println(WiFi.localIP());  
           //initializes the UDP state
           //This initializes the transfer buffer
-          udp.begin(WiFi.localIP(),udpPort);
+          udp.begin(WiFi.localIP(),mouse1_udpPort);
           connected = true;
           break;
       case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
@@ -307,7 +307,7 @@ void loop() {
   // time starts from 0
   float start_t = (float)micros() / 1000000.0;
   float last_t = -target_period_ms / 1000.0; // Offset by expected looptime to avoid divide by zero
-
+  int state = 0; //STATE 0 = INITIAL SPIN
   // MAIN LOOP
   while (true) {
   //while wifi udp is connected? 
@@ -356,23 +356,27 @@ void loop() {
     float maxtheta[2]; //store only 1 maxtheta, NEED ARRAY OF MAXTHETA maxtheta[0] will be 0
     float target_v = 0;//sqrtf(dx * dx + dy * dy); // SPEED OF ROBOT
     float target_omega;//= signed_angle(last_dx, last_dy, last_target_v, dx, dy, target_v) / dt; 
-    int state = 0; //STATE 0 = INITIAL SPIN
+    
     //STATE MACHINE!!!
     if(state == 0){ //Initial spin
-      target_omega = M_PI_2; //increment by pi/4 CHANGED TO pi/2 FOR TEST
+      target_omega = M_PI_4; //increment by pi/4 CHANGED TO pi/2 FOR TEST
       target_theta = target_theta + target_omega * dt;
        //SEND PACKET
-      udp.beginPacket(udpAddress,udpPort);
-      udp.printf("%lu %lu", target_theta, t); //prints theta and corresponding time t to Jetson SHOULD THESE BE %lu
+      udp.beginPacket(udpAddress,mouse1_udpPort);
+      udp.printf("%f %f", target_theta, t); //prints theta and corresponding time t to Jetson SHOULD THESE BE %lu
       udp.endPacket();
       Serial.print("theta = "); Serial.println(target_theta);
+    
       if(target_theta>=2*M_PI) { //IF 360deg IS COMPLETE
+        Serial.print("GOT HERE");
         //target_theta = 0;
         state = 1; // GO TO NEXT STATE
       }
+      else Serial.println("now here");
     } //if state 0 (initial spin)
 
     else if(state ==1){ //STATE 1= RECEIVE PACKET, SPIN TO THAT THETA
+        Serial.println("State 1:receive packet");
         //RECEIVE PACKET
         int packetSize = udp.parsePacket();
         if(packetSize >= sizeof(float)){
@@ -388,7 +392,7 @@ void loop() {
 
     else if(state == 2){ //MOVE FORWARD '2' SECONDS, SEND SOMETHING TO MAKE PYTHON RECORD SOUND AGAIN AND CROSS CORRELATE 3 MICS (GO TO SPECIFIC PART OF PYTHON CODE)
       target_theta = target_theta; //PROBABLY DON'T NEED JUST WANNA MAKE SURE IT STAYS AT THIS ANGLE
-      target_v = 1;//Move forward
+      target_v = .1;//Move forward
       
       //Receive correlation result to get angles for each mouse
       //rotate to that angle (DIFFERENT STATE?)

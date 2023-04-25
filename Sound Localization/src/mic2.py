@@ -39,7 +39,7 @@ v = 343 #speed of sound /sec (20C through air)
 while __name__ == '__main__':
     UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
     UDPServerSocket.bind((ip, port))
-    theta = 1 #set theta != 0 so we can enter while loop
+
     if state == 0: #Read theta values until they =2pi, meaning we having finished 360 degrees 
         #open audio streams for each mic
         audio = pyaudio.PyAudio() 
