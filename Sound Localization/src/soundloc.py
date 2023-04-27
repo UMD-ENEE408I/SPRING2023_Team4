@@ -244,7 +244,7 @@ while __name__ == '__main__':
         i_max_C_normalized = np.argmax(C_sig1sig2_normalized_per_shift[max_indices_back:max_indices_forward + 1]) + max_indices_back
         t_shift_hat_normalized = t_shift_C[i_max_C_normalized] #time where signals are most similar
         #Time difference of arrival
-        TDoA = (i_max_C_normalized - center_index) * dt #index difference bw max correlation value and zero shift = time difference bw signals, *dt converts to time units
+        TDoA = t_shift_hat_normalized* dt #(i_max_C_normalized - center_index) * dt #index difference bw max correlation value and zero shift = time difference bw signals, *dt converts to time units
         #Angle of Arrival
         mouse2_maxtheta[1] = np.arcsin(TDoA * v / d) #SHOULD get right angle, hopefully
         
