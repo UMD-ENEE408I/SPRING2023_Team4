@@ -46,7 +46,7 @@ mouse1_maxtheta = arr.array('d', [0] * 2) #only need two elements, initial 0 and
 mouse2_maxtheta = arr.array('d', [0] * 2) #only need two elements, initial 0 and final maxtheta
 
 state = 0 #State machine State 0 = initial spin
-mouse1_ip_address = 0; mouse2_ip_address = 0; sig3 = 0; sig3_rms = 0; audio = 0; frames3 = 0; mouse1_theta = 0; mouse2_theta = 0
+mouse1_ip_address = 0; mouse2_ip_address = 0; sig3 = 0; sig3_rms = 0; audio = 0; frames3 = 0; mouse1_theta = 0; mouse2_theta = 0;sig1=0;sig2=0
 #START GETTING VALUES OF THETA
 while __name__ == '__main__':
 # =============================================================================
@@ -94,28 +94,28 @@ while __name__ == '__main__':
         print("0th Element",id[0])
         print("1st Element",id[1])
        #exit if statement in python
-        print (state)
-# =============================================================================
-#     if state == 0: #find indeces of microphones #find device id for microphone
-#         audio = pyaudio.PyAudio() 
-#         info = audio.get_host_api_info_by_index(0)
-#         numdevices = info.get('deviceCount') #should be 3
-#         #j = 0
-#         id = []
-#         for i in range(0, numdevices):
-#             if (audio.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 0:
-#                 id.append(i) #save device ids
-#                 #j = j + 1
-#                 print("Input Device id ", i, " - ", audio.get_device_info_by_host_api_device_index(0, i))
-#                 print('\n')
-#         #find which microphone is on which mouse?
-#         print('DOne with Identifying Microphones ID')
-#         # The receivers of all 3 microphones have to be tested in order for this portion of the test to pass.
-#         state =1 #NEXT STATE
-# =============================================================================
-
+        print ("state",state)
+    # =============================================================================
+    #     if state == 0: #find indeces of microphones #find device id for microphone
+    #         audio = pyaudio.PyAudio() 
+    #         info = audio.get_host_api_info_by_index(0)
+    #         numdevices = info.get('deviceCount') #should be 3
+    #         #j = 0
+    #         id = []
+    #         for i in range(0, numdevices):
+    #             if (audio.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 0:
+    #                 id.append(i) #save device ids
+    #                 #j = j + 1
+    #                 print("Input Device id ", i, " - ", audio.get_device_info_by_host_api_device_index(0, i))
+    #                 print('\n')
+    #         #find which microphone is on which mouse?
+    #         print('DOne with Identifying Microphones ID')
+    #         # The receivers of all 3 microphones have to be tested in order for this portion of the test to pass.
+    #         state =1 #NEXT STATE
+    # =============================================================================
+    
     elif state == 1: #initial spin, receive and record
-        print ("IN STATE 1")
+        print ("state",state)
         
         print('Recording Sound')
         stream1 = audio.open(format=FORMAT,
@@ -132,69 +132,70 @@ while __name__ == '__main__':
                             input=True,
                             frames_per_buffer=chunk,
                             input_device_index = id[1])
-
-# =============================================================================
-#         stream3 = audio.open(format=FORMAT,
-#                             channels=CHANNELS,
-#                             rate=fs,
-#                             input_device_index=id[2],
-#                             frames_per_buffer=chunk)
-# =============================================================================
-        
+    
+    # =============================================================================
+    #         stream3 = audio.open(format=FORMAT,
+    #                             channels=CHANNELS,
+    #                             rate=fs,
+    #                             input_device_index=id[2],
+    #                             frames_per_buffer=chunk)
+    # =============================================================================
+            
         frames1 = [] # stores recorded data of mic1
         frames2 = [] #stores recorded data of mic2
         frames3 = [] # stores recorded data
         sig1_rms = [] #stores rms values of signal 1
         sig2_rms = [] #rms of signal 2
         sig3_rms = [] #stores rms values of signal
-    
-        #while (mouse1_theta<2*np.pi): #ONLY BASED ON MOUSE 1 IS THIS OK? until theta equals 2pi #int(fs/ chunk * 5)): #change number w/ chunk * to change recording length
-            #START RECORDING, WHEN WE START GETTING VALUES OF THETA
-            #RECEIVE PACKET, will this do this continuously as the rest of the case is completed? 
-# =============================================================================
-#       
-#         (mouse1_theta_by, mouse1_ip_address) = (UDPServerSocket1.recvfrom(max_buffer_size) #WILL THETA BE IN BYTES, RIGHT? 
-#       
-#         print(str(mouse1_theta_by))
-#       
-#         print('\n')
-# =============================================================================
+        
+            #while (mouse1_theta<2*np.pi): #ONLY BASED ON MOUSE 1 IS THIS OK? until theta equals 2pi #int(fs/ chunk * 5)): #change number w/ chunk * to change recording length
+                #START RECORDING, WHEN WE START GETTING VALUES OF THETA
+                #RECEIVE PACKET, will this do this continuously as the rest of the case is completed? 
+    # =============================================================================
+    #       
+    #         (mouse1_theta_by, mouse1_ip_address) = (UDPServerSocket1.recvfrom(max_buffer_size) #WILL THETA BE IN BYTES, RIGHT? 
+    #       
+    #         print(str(mouse1_theta_by))
+    #       
+    #         print('\n')
+    # =============================================================================
+          
+    # =============================================================================
+    #         mouse1_theta_str = mouse1_theta_by.decode('utf-8') #decode bytes to a string
+    #       
+    #         mouse1_theta_split = mouse1_theta_str.split() #split string into words by space (gets indiidual values)
+    #       
+    #         mouse1_time_str = mouse1_theta_split[1] #store ONLY time values
+    #       
+    #       
+    #         mouse1_theta_str = mouse1_theta_split[0] #store ONLY theta value in theta_str WILL IT BE MORE THAN LENGTH 2??
+    #       
+    #         mouse1_theta = float(mouse1_theta_str) # convert string to float number
+    #         mouse1_t = float(mouse1_time_str) #convert string to float
+    #   
+    #         print('Message received from Mouse 1: {}'.format(mouse1_theta_str)) #prints theta as string
+    #         print('\n')
+    # =============================================================================
+         
+    # =============================================================================
+    #         (mouse2_theta_by, mouse2_ip_address) = UDPServerSocket2.recvfrom(max_buffer_size) #WILL THETA BE IN BYTES, RIGHT? 
+    #         mouse2_theta_str = mouse2_theta_by.decode('utf-8') #decode bytes to a string
+    #         mouse2_theta_split = mouse2_theta_str.split() #split string into words by space (gets indiidual values)
+    #         mouse2_time_str = mouse2_theta_split[1] #store ONLY time values
+    #         mouse2_theta_str = mouse2_theta_split[0] #store ONLY theta value in theta_str WILL IT BE MORE THAN LENGTH 2??
+    #       
+    #         mouse2_theta = float(mouse2_theta_str) # convert string to float number
+    #         mouse2_t = float(mouse2_time_str) #convert string to float
+    # =============================================================================
       
-# =============================================================================
-#         mouse1_theta_str = mouse1_theta_by.decode('utf-8') #decode bytes to a string
-#       
-#         mouse1_theta_split = mouse1_theta_str.split() #split string into words by space (gets indiidual values)
-#       
-#         mouse1_time_str = mouse1_theta_split[1] #store ONLY time values
-#       
-#       
-#         mouse1_theta_str = mouse1_theta_split[0] #store ONLY theta value in theta_str WILL IT BE MORE THAN LENGTH 2??
-#       
-#         mouse1_theta = float(mouse1_theta_str) # convert string to float number
-#         mouse1_t = float(mouse1_time_str) #convert string to float
-#   
-#         print('Message received from Mouse 1: {}'.format(mouse1_theta_str)) #prints theta as string
-#         print('\n')
-# =============================================================================
-     
-# =============================================================================
-#         (mouse2_theta_by, mouse2_ip_address) = UDPServerSocket2.recvfrom(max_buffer_size) #WILL THETA BE IN BYTES, RIGHT? 
-#         mouse2_theta_str = mouse2_theta_by.decode('utf-8') #decode bytes to a string
-#         mouse2_theta_split = mouse2_theta_str.split() #split string into words by space (gets indiidual values)
-#         mouse2_time_str = mouse2_theta_split[1] #store ONLY time values
-#         mouse2_theta_str = mouse2_theta_split[0] #store ONLY theta value in theta_str WILL IT BE MORE THAN LENGTH 2??
-#       
-#         mouse2_theta = float(mouse2_theta_str) # convert string to float number
-#         mouse2_t = float(mouse2_time_str) #convert string to float
-# =============================================================================
-  
-# =============================================================================
-#         print('Message received from Mouse 2: {}'.format(mouse2_theta_str)) #prints theta as string
-#         print('\n')
-# =============================================================================
-     
-     
-        #Record all 3 mics
+    # =============================================================================
+    #         print('Message received from Mouse 2: {}'.format(mouse2_theta_str)) #prints theta as string
+    #         print('\n')
+    # =============================================================================
+         
+         
+    
+            #Record all 3 mics
         data1 = stream1.read(chunk)
         data2 = stream2.read(chunk)
         # data3 = stream3.read(chunk)
@@ -213,16 +214,15 @@ while __name__ == '__main__':
         frames1.append(data1)
         frames2.append(data2)
         #frames3.append(data3)
-    
-# =============================================================================
-#         #REMEMBER: theta_list[i][0] = 0, extended after this first value of 0
-#         mouse1_theta_list[0].extend([mouse1_t]) #extend with new time 
-#         mouse1_theta_list[1].extend([mouse1_theta]) #extend with new theta
-#         mouse2_theta_list[0].extend([mouse2_t]) #extend with new time 
-#         mouse2_theta_list[1].extend([mouse2_theta]) #extend with new theta
-# =============================================================================
-    
-    
+    # =============================================================================
+    #         #REMEMBER: theta_list[i][0] = 0, extended after this first value of 0
+    #         mouse1_theta_list[0].extend([mouse1_t]) #extend with new time 
+    #         mouse1_theta_list[1].extend([mouse1_theta]) #extend with new theta
+    #         mouse2_theta_list[0].extend([mouse2_t]) #extend with new time 
+    #         mouse2_theta_list[1].extend([mouse2_theta]) #extend with new theta
+    # =============================================================================
+        
+        
         # Stop and close the stream
         stream1.stop_stream()
         stream2.stop_stream()
@@ -238,73 +238,79 @@ while __name__ == '__main__':
         mouse1_maxtheta[0] = 0 
         state = 2 #NEXT STATE
         print("Moving to State 2")
-
+    
     elif state == 2: #find peaks/cross correlation to find maxtime/maxtheta
         print("IN STATE 2")
-# =============================================================================
-#         #1 MIC
-#         # Open and plot output.wave
-#         wf = wave.open(filename, 'wb')
-#         wf.setnchannels(CHANNELS)
-#         wf.setsampwidth(audio.get_sample_size(FORMAT))
-#         wf.setframerate(fs)
-#         wf.writeframes(b''.join(frames3))
-#         wf.close()
-# 
-#         spf = wave.open("output.wav", "r")
-#         #sig1 = spf.readframes(-1)
-#         #sig1 = np.frombuffer(sig1, dtype=np.int16) # HERE OR ABOVE? converts signal to numpy array
-#         #sig1_rms = np.sqrt(np.mean(sig1**2))
-#         fs = spf.getframerate()
-#         #Time = np.linspace(0, len(sig3_rms) / fs, num=len(sig3_rms))
-#         #Filter Mic signal NORM OF LAST 100s
-#         # def normalize(x,axis = 0):
-#         #     return sklearn.preprocessing.minmax_scale(x,axis=axis)
-# 
-#         #SIGNALS MUST BE DOWNSAMPLED TO THE SAMPLING RATE OF THE UDP
-# 
-#         #This line has not been tested, the rest of getting signal, converting to volume, finding peaks WORKS
-#         sig3_inp = interp1d(mouse1_theta_list[0],sig3_rms, kind = 'nearest') #theta_list[0]=thetalist time, sig1=mic signal Try other kinds to see accuracy
-#         Time = np.linspace(0, len(sig3_inp) / fs, num=len(sig3_inp))
-#         #FIND THETA FOR MOUSE 1
-#         #Plot mic 1 signal (not necessary)
-#         plt.figure(1)
-#         plt.title("Signal Wave")
-#         plt.plot(Time, sig3_inp, color='r')
-#         #plt.plot(Time, sig3_rms, color='r')
-# 
-#         #find max volume and time
-#         peaks, _ = find_peaks(sig3_inp,prominence=1) #try without prominence
-#         maxpeak = peaks[np.argmax(sig3_inp[peaks])]
-#         #peaks, _ = find_peaks(sig3_rms,prominence=1) #try without prominence
-#         #maxpeak = peaks[np.argmax(sig3_rms[peaks])]
-#         mouse1_xmax = Time[maxpeak] #time that max occurs
-#         #find element in theta_list that corresponds to time xmax
-#         for i in range(len(mouse1_theta_list)):
-#             if mouse1_xmax == mouse1_theta_list[0][i]: 
-#                 mouse1_maxtheta[1] = mouse1_theta_list[1][i] #set maxtheta to the element in theta_list that occurs at time xmax
-#         print('Max peak of Mouse1 occurs at time= ', mouse1_xmax)
-#         print('\n')
-#         plt.figure(2)
-#         plt.title("Max Peak")
-#         #plt.plot(Time,sig1) #Plot amplitude of frequency
-#         plt.plot(Time[peaks],sig3[peaks], 'x'); #plt.plot(signal); plt.legend(['prominence'])
-#         #plt.axvline(Time=xmax, ls='--', color="k")
-#         plt.show()
-# 
-# 
-# =============================================================================
+    # =============================================================================
+    #         #1 MIC
+    #         # Open and plot output.wave
+    #         wf = wave.open(filename, 'wb')
+    #         wf.setnchannels(CHANNELS)
+    #         wf.setsampwidth(audio.get_sample_size(FORMAT))
+    #         wf.setframerate(fs)
+    #         wf.writeframes(b''.join(frames3))
+    #         wf.close()
+    
+    #         spf = wave.open("output.wav", "r")
+    #         #sig1 = spf.readframes(-1)
+    #         #sig1 = np.frombuffer(sig1, dtype=np.int16) # HERE OR ABOVE? converts signal to numpy array
+    #         #sig1_rms = np.sqrt(np.mean(sig1**2))
+    #         fs = spf.getframerate()
+    #         #Time = np.linspace(0, len(sig3_rms) / fs, num=len(sig3_rms))
+    #         #Filter Mic signal NORM OF LAST 100s
+    #         # def normalize(x,axis = 0):
+    #         #     return sklearn.preprocessing.minmax_scale(x,axis=axis)
+    # 
+    #         #SIGNALS MUST BE DOWNSAMPLED TO THE SAMPLING RATE OF THE UDP
+    # 
+    #         #This line has not been tested, the rest of getting signal, converting to volume, finding peaks WORKS
+    #         sig3_inp = interp1d(mouse1_theta_list[0],sig3_rms, kind = 'nearest') #theta_list[0]=thetalist time, sig1=mic signal Try other kinds to see accuracy
+    #         Time = np.linspace(0, len(sig3_inp) / fs, num=len(sig3_inp))
+    #         #FIND THETA FOR MOUSE 1
+    #         #Plot mic 1 signal (not necessary)
+    #         plt.figure(1)
+    #         plt.title("Signal Wave")
+    #         plt.plot(Time, sig3_inp, color='r')
+    #         #plt.plot(Time, sig3_rms, color='r')
+    # 
+    #         #find max volume and time
+    #         peaks, _ = find_peaks(sig3_inp,prominence=1) #try without prominence
+    #         maxpeak = peaks[np.argmax(sig3_inp[peaks])]
+    #         #peaks, _ = find_peaks(sig3_rms,prominence=1) #try without prominence
+    #         #maxpeak = peaks[np.argmax(sig3_rms[peaks])]
+    #         mouse1_xmax = Time[maxpeak] #time that max occurs
+    #         #find element in theta_list that corresponds to time xmax
+    #         for i in range(len(mouse1_theta_list)):
+    #             if mouse1_xmax == mouse1_theta_list[0][i]: 
+    #                 mouse1_maxtheta[1] = mouse1_theta_list[1][i] #set maxtheta to the element in theta_list that occurs at time xmax
+    #         print('Max peak of Mouse1 occurs at time= ', mouse1_xmax)
+    #         print('\n')
+    #         plt.figure(2)
+    #         plt.title("Max Peak")
+    #         #plt.plot(Time,sig1) #Plot amplitude of frequency
+    #         plt.plot(Time[peaks],sig3[peaks], 'x'); #plt.plot(signal); plt.legend(['prominence'])
+    #         #plt.axvline(Time=xmax, ls='--', color="k")
+    #         plt.show()
+    # 
+    # 
+    # =============================================================================
         #FIND THETA FOR MOUSE 2
-        f = 1 #fundamental frequency: what is f in this case, it is 1 in example
+        f = 2  #fundamental frequency: what is f in this case, it is 1 in example #2kHZ
         #normalize signals
+        print("fundamental frequency",f)
+        print("SIG1",sig1)
+        print("SIG2",sig2)
         sig1 = sig1 / np.linalg.norm(sig1)  #new variable or this fine?
-        sig2 = sig2 / np.linalg.norm(sig2)
+        sig2 = sig2 / np.linalg.norm(sig2) 
         C_sig1sig2 = np.correlate(sig1, sig2, mode='full') #Calculate correlation
+        print("correlation",C_sig1sig2)
         N = C_sig1sig2.shape[0] #length of C
+        print("N",N)
         T = N*dt #length of signal (time)
+        print("T",T)
         t_shift_C = np.arange(-T + dt, T, dt)#Calculate corresponding timeshift corresponding to each index HOW?
-      
-       
+          
+           
         
         plt.figure(1)
         plt.plot(sig1)
@@ -316,7 +322,7 @@ while __name__ == '__main__':
         #plt.title('Signals to find the time shift between')
         C_norm_sig1 = np.zeros(C_sig1sig2.shape[0])
         C_norm_sig2 = np.zeros(C_sig1sig2.shape[0])
-
+        
         center_index = int((C_sig1sig2.shape[0] + 1) / 2) - 1 #index of zero shift
         low_shift_index = int((C_sig1sig2.shape[0] + 1) / 2) + 1
         high_shift_index = int((C_sig1sig2.shape[0] + 1) / 2) - 1
@@ -324,7 +330,7 @@ while __name__ == '__main__':
             low_norm_index = max(0, i)
             high_norm_index = min(sig1.shape[0], i + sig1.shape[0])
             C_norm_sig1[i + center_index] = np.linalg.norm(sig1[low_norm_index:high_norm_index])
-
+        
             low_norm_index = max(0, -i)
             high_norm_index = min(sig2.shape[0], -i + sig2.shape[0])
             C_norm_sig2[i + center_index] = np.linalg.norm(sig2[low_norm_index:high_norm_index])
@@ -334,10 +340,10 @@ while __name__ == '__main__':
         
         
         
-      
-       
+          
+           
         plt.plot(C_sig1sig2_normalized_per_shift)
-       
+           
         max_indices_back = -int(((1 / f) / 2) / dt) + center_index
         print ("max_indices_back",max_indices_back)
         max_indices_forward = int(((1 / f) / 2) / dt) + center_index
@@ -352,69 +358,69 @@ while __name__ == '__main__':
         TDoA = (i_max_C_normalized - center_index) * dt #index difference bw max correlation value and zero shift = time difference bw signals, *dt converts to time units
         print("TDoA",TDoA)
         #Angle of Arrival
-# =============================================================================
-#         mouse2_maxtheta[1] = np.arcsin(TDoA * v / d) #SHOULD get right angle, hopefully
-#         
-#         spf = wave.open("output.wav", "r")
-#         fs = spf.getframerate()
-#         Time = np.linspace(0, len(sig1_rms) / fs, num=len(sig1_rms))
-#         #Filter Mic signal NORM OF LAST 100s
-#         # def normalize(x,axis = 0):
-#         #     return sklearn.preprocessing.minmax_scale(x,axis=axis)
-# 
-#         #SIGNALS MUST BE DOWNSAMPLED TO THE SAMPLING RATE OF THE UDP
-#         #mic sigs fs= 44100 Hz
-#         
-#         #sig1_norm = normalize(sig1)
-# 
-#         #When should we interpolate signals to the timing of UDP? before or after correlation?
-#         sig1_inp = interp1d(mouse2_theta_list[0],sig1_rms, kind = 'nearest') #theta_list[0]=thetalist time, sig1=mic signal Try other kinds to see accuracy
-# =============================================================================
+        # =============================================================================
+        #         mouse2_maxtheta[1] = np.arcsin(TDoA * v / d) #SHOULD get right angle, hopefully
+        #         
+        #         spf = wave.open("output.wav", "r")
+        #         fs = spf.getframerate()
+        #         Time = np.linspace(0, len(sig1_rms) / fs, num=len(sig1_rms))
+        #         #Filter Mic signal NORM OF LAST 100s
+        #         # def normalize(x,axis = 0):
+        #         #     return sklearn.preprocessing.minmax_scale(x,axis=axis)
+        # 
+        #         #SIGNALS MUST BE DOWNSAMPLED TO THE SAMPLING RATE OF THE UDP
+        #         #mic sigs fs= 44100 Hz
+        #         
+        #         #sig1_norm = normalize(sig1)
+        # 
+        #         #When should we interpolate signals to the timing of UDP? before or after correlation?
+        #         sig1_inp = interp1d(mouse2_theta_list[0],sig1_rms, kind = 'nearest') #theta_list[0]=thetalist time, sig1=mic signal Try other kinds to see accuracy
+        # =============================================================================
+                
         
-
-# =============================================================================
-#         state = 3 # GO TO NEXT STATE
-# 
-#     elif state == 3: #Send packet with value of theta
-#         print('In state 2')
-#         print('\n')
-#             # SEND PACKET AFTER EXITING WHILE LOOP (SPIN IS OVER)
-#         x = mouse1_maxtheta[1]yyyyyyyy5
-#         print('Sending {}'.format(x)) # print here what we are sending
-#         print('\n')
-#         x = struct.pack("f", x[0]) #Send back theta
-#         UDPServerSocket1.sendto(x, mouse1_ip_address)
-#         state = 4
-# 
-#     elif state == 4: 
-#         print("State 3! Exit")
-#         print('\n')
-#         exit()
-#     else:
-#         print("HERE IN ELSE EXITING")
-#         print('\n')
-#         exit()
-# =============================================================================
-    #once theta=2pi, exit loop -> spin is over2
-    #END OF WHILE LOOP
-
-
-
-
-
-
-
-
-#The position of mouse at xmax is where we want it to rotate to for the starting position
-
-
-
-
-#move on to other code (CROSS CORRELATION)
-
-#begin recording of all 3 microphones
-#store 3 signals as 3 different functions
-#use cross correlation to compare functions, find time delay
-#use time delay to triangulate/find angle
-
-#2 MICS We will need to cross correlate signals to find the peak and the angle to send mouse back to
+        # =============================================================================
+        #         state = 3 # GO TO NEXT STATE
+        # 
+        #     elif state == 3: #Send packet with value of theta
+        #         print('In state 2')
+        #         print('\n')
+        #             # SEND PACKET AFTER EXITING WHILE LOOP (SPIN IS OVER)
+        #         x = mouse1_maxtheta[1]yyyyyyyy5
+        #         print('Sending {}'.format(x)) # print here what we are sending
+        #         print('\n')
+        #         x = struct.pack("f", x[0]) #Send back theta
+        #         UDPServerSocket1.sendto(x, mouse1_ip_address)
+        #         state = 4
+        # 
+        #     elif state == 4: 
+        #         print("State 3! Exit")
+        #         print('\n')
+        #         exit()
+        #     else:
+        #         print("HERE IN ELSE EXITING")
+        #         print('\n')
+        #         exit()
+        # =============================================================================
+            #once theta=2pi, exit loop -> spin is over2
+            #END OF WHILE LOOP
+        
+        
+        
+        
+        
+        
+        
+        
+        #The position of mouse at xmax is where we want it to rotate to for the starting position
+        
+        
+        
+        
+        #move on to other code (CROSS CORRELATION)
+        
+        #begin recording of all 3 microphones
+        #store 3 signals as 3 different functions
+        #use cross correlation to compare functions, find time delay
+        #use time delay to triangulate/find angle
+        
+        #2 MICS We will need to cross correlate signals to find the peak and the angle to send mouse back to
