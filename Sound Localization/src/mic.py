@@ -41,12 +41,27 @@ while __name__ == '__main__':
     if state == 0:
         #initial spin, receive and record
         print('State 0')
-        audio = pyaudio.PyAudio() 
+        audio = pyaudio.PyAudio()
+        info = audio.get_host_api_info_by_index(0)
+        numdevices = info.get('deviceCount') #should be 3
+        #j = 0
+        id = []
+        for i in range(0, numdevices):
+            if (audio.get_device_info_by_host_api_device_index(0, i).get('maxInputChannels')) > 0:
+                id.append(i) #save device ids
+                #j = j + 1
+                print("Input Device id ", i, " - ", audio.get_device_info_by_host_api_device_index(0, i))
+#         stream3 = audio.open(format=FORMAT,
+#                             channels=CHANNELS,
+#                             rate=fs,
+#                             input=True,
+#                             frames_per_buffer=chunk)
         stream3 = audio.open(format=FORMAT,
                             channels=CHANNELS,
                             rate=fs,
                             input=True,
-                            frames_per_buffer=chunk)
+                            frames_per_buffer=chunk,
+                            input_device_index = id[4])
 
         frames3 = [] # stores recorded data
         sig3_rms = [] #stores rms values of signal
@@ -56,7 +71,7 @@ while __name__ == '__main__':
         
         # Store data in chunks
         while (mouse1_theta<2*np.pi): #until theta equals 2pi #int(fs/ chunk * 5)): #change number w/ chunk * to change recording length
-            
+            print('here')
             (mouse1_theta_by, mouse1_ip_address) = UDPServerSocket1.recvfrom(max_buffer_size) #WILL THETA BE IN BYTES, RIGHT? 
             #print(str(mouse1_theta_by))
             mouse1_theta_str = mouse1_theta_by.decode('utf-8') #decode bytes to a string
@@ -271,5 +286,4 @@ while __name__ == '__main__':
         exit()
     #once theta=2pi, exit loop -> spin is over2
     #END OF WHILE LOOP
-
 

@@ -5,8 +5,6 @@
 #include <Encoder.h>
 
 
-//DEFINE PORT # FOR SOCKET CONNECTION
-//#define PORT 12345
 
 /* WIFI BEGIN
  *  This sketch sends random data over UDP on a ESP32 device
@@ -18,12 +16,16 @@
 const char * networkName = "408ITerps";
 const char * networkPswd = "goterps2022";
 
+// Home Wifi name and password
+// const char * networkName = "Fios-rKrV7";
+// const char * networkPswd = "taste24roe67acre";
+
 //IP address to send UDP data to:
 // either use the ip address of the server or 
 // a network broadcast address
-const char * udpAddress = "192.168.2.114"; //NEED TO CHECK
-const int mouse1_udpPort = 3333; 
-const int mouse2_udpPort = 3334;
+const char * udpAddress = "192.168.2.108"; //NEED TO CHECK
+const int mouse1_udpPort = 3334; //3334; for mouse2
+//const int mouse1_udpPort = 3334;
 
 boolean connected = false;
 
@@ -272,6 +274,7 @@ void loop() {
   float last_dy = (y0 - last_y) / ((float)target_period_ms / 1000.0);
   float last_target_v = sqrtf(last_dx * last_dx + last_dy * last_dy);
   float target_theta = 0.0; // This is an integrated quantity
+  float track_target_theta = 0;
   // Motors are controlled by a position PID
   // with inputs interpreted in meters and outputs interpreted in volts
   // integral term has "anti-windup"
@@ -308,10 +311,13 @@ void loop() {
   float start_t = (float)micros() / 1000000.0;
   float last_t = -target_period_ms / 1000.0; // Offset by expected looptime to avoid divide by zero
   int state = 0; //STATE 0 = INITIAL SPIN
+  int k = 0;
+  int j = 0;
+  float t_lastpacketsent = start_t;
   // MAIN LOOP
   while (true) {
-  //while wifi udp is connected? 
-  //At end, if statement that disconnects UDP so we exit while(connected) loop ( if(mouse is found) disconnect UDP )
+    //while wifi udp is connected? 
+    //At end, if statement that disconnects UDP so we exit while(connected) loop ( if(mouse is found) disconnect UDP )
     int t_start = micros();
     int t_end = micros();
     // Get the time elapsed
@@ -353,49 +359,116 @@ void loop() {
    // float target_omega = signed_angle(last_dx, last_dy, last_target_v, dx, dy, target_v) / dt;
 
   
-    float maxtheta[2]; //store only 1 maxtheta, NEED ARRAY OF MAXTHETA maxtheta[0] will be 0
+    float maxtheta; //store only 1 maxtheta, NEED ARRAY OF MAXTHETA maxtheta[0] will be 0
     float target_v = 0;//sqrtf(dx * dx + dy * dy); // SPEED OF ROBOT
-    float target_omega;//= signed_angle(last_dx, last_dy, last_target_v, dx, dy, target_v) / dt; 
-    
+    float target_omega = 0;//= signed_angle(last_dx, last_dy, last_target_v, dx, dy, target_v) / dt; 
+    int stopped = true;
     //STATE MACHINE!!!
     if(state == 0){ //Initial spin
-      target_omega = M_PI_4; //increment by pi/4 CHANGED TO pi/2 FOR TEST
-      target_theta = target_theta + target_omega * dt;
+     // target_theta = target_theta;
+      target_omega = M_PI; //increment by pi/4 CHANGED TO pi/2 FOR TEST
+      // target_theta = target_theta + target_omega * dt;
+      // Serial.print("test theta ="); Serial.println(target_theta);
        //SEND PACKET
-      udp.beginPacket(udpAddress,mouse1_udpPort);
-      udp.printf("%f %f", target_theta, t); //prints theta and corresponding time t to Jetson SHOULD THESE BE %lu
-      udp.endPacket();
-      Serial.print("theta = "); Serial.println(target_theta);
-    
-      if(target_theta>=2*M_PI) { //IF 360deg IS COMPLETE
-        Serial.print("GOT HERE");
-        //target_theta = 0;
-        state = 1; // GO TO NEXT STATE
+      stopped = false;
+      if(t - t_lastpacketsent > .03) { //good speed, maybe little slower
+        
+        target_theta = target_theta + target_omega * dt;
+        track_target_theta = track_target_theta + target_omega*dt; //so that we can trakc 0-2pi every time (even when targettheta > 2pi; we don't have to reset targettheta)
+        //Serial.print("test theta ="); Serial.println(target_theta);
+        //track_target_theta = target_theta;
+        udp.beginPacket(udpAddress,mouse1_udpPort);
+        udp.printf("%f %f %f", target_theta, t, track_target_theta); //prints theta and corresponding time t to Jetson SHOULD THESE BE %lu
+        udp.endPacket();
+        Serial.print("theta = "); Serial.println(target_theta);
+        t_lastpacketsent = t;
+        
+        if(track_target_theta>=2*M_PI) { //IF 360deg IS COMPLETE
+          udp.beginPacket(udpAddress,mouse1_udpPort);
+          udp.printf("%f %f %f", target_theta, t, track_target_theta); //prints theta and corresponding time t to Jetson SHOULD THESE BE %lu
+          udp.endPacket();
+          Serial.print("GOT HERE");
+          //target_theta = 0;
+          state = 1; // GO TO NEXT STATE
+        }
       }
-      else Serial.println("now here");
+      else target_theta = target_theta;
     } //if state 0 (initial spin)
 
     else if(state ==1){ //STATE 1= RECEIVE PACKET, SPIN TO THAT THETA
-        Serial.println("State 1:receive packet");
         //RECEIVE PACKET
+        stopped = false;
         int packetSize = udp.parsePacket();
         if(packetSize >= sizeof(float)){
-          udp.read((char*)maxtheta, sizeof(maxtheta)); //need the (char*)
+          udp.read((char*)&maxtheta, sizeof(maxtheta)); //need the (char*)
           udp.flush();
           // target_theta = maxtheta; //ASSIGN THETA TO MAX AMP THETA
-          Serial.printf("maxtheta is %f\n", maxtheta[1]); 
+          Serial.printf("maxtheta is %f\n", maxtheta); 
+          //target_omega = maxtheta; //set angle to theta with max volume
+          //target_theta = target_theta + target_omega * dt;
+          target_theta = maxtheta;
+          Serial.printf("targettheta %f\n", target_theta);
+          state = 2; //GO TO NEXT STATE
         } //if (send UDP)
-        target_omega = maxtheta[1]; //set angle to theta with max volume
-        target_theta = target_theta + target_omega * dt;
-        state = 2; //GO TO NEXT STATE
+        
     }
 
     else if(state == 2){ //MOVE FORWARD '2' SECONDS, SEND SOMETHING TO MAKE PYTHON RECORD SOUND AGAIN AND CROSS CORRELATE 3 MICS (GO TO SPECIFIC PART OF PYTHON CODE)
+
       target_theta = target_theta; //PROBABLY DON'T NEED JUST WANNA MAKE SURE IT STAYS AT THIS ANGLE
-      target_v = .1;//Move forward
       
-      //Receive correlation result to get angles for each mouse
-      //rotate to that angle (DIFFERENT STATE?)
+      //Serial.print("state 2");
+      if(k< 900){ //move forward until k=
+        stopped = false;
+        target_v = .1;//Move forward
+        k++;
+      }
+      else{target_v = 0; stopped = true; track_target_theta = 0; state = 3; k = 0;} //state = 3; (mouse2) state = 0; (mouse1)
+    }
+
+// MOUSE 2 ONLY
+    else if(state == 3){ 
+      target_theta = target_theta;
+      stopped = true;
+      if(j < 1000){ //Stay stopped
+        target_v = 0;//stop robot
+        target_theta = target_theta;
+        // stopped = true;
+        j++;
+      }
+      else{ //receive packet
+        // stopped = true;
+          j = 0; //target_theta = target_theta;
+          state = 4;
+         // CHANGE STATE
+      }
+      //SEND PACKET TO TELL MICS TO START RECORDING AGAIN
+      if(t - t_lastpacketsent > .02) {
+        udp.beginPacket(udpAddress,mouse1_udpPort);
+        udp.printf("%d", state); //send state
+        udp.endPacket();
+        t_lastpacketsent = t;
+        target_theta = target_theta;
+      }
+    
+
+    }
+
+    else if(state == 4){ //RECEIVE PACKET
+      int packetSize = udp.parsePacket();
+      if(packetSize >= sizeof(float)){
+        udp.read((char*)&maxtheta, sizeof(maxtheta)); //need the (char*)
+        udp.flush();
+        // target_theta = maxtheta; //ASSIGN THETA TO MAX AMP THETA
+        Serial.printf("message received: target_omega is %f\n", maxtheta); 
+        //target_omega = maxtheta; //set angle to theta with max volume
+        //target_theta = target_theta + target_omega * dt;
+        target_omega = maxtheta;
+        target_theta = target_theta + target_omega*dt;
+        Serial.printf("target_theta %f\n", target_theta);
+        state = 2; //GO TO NEXT STATE
+        stopped = false;
+      }
     }
     //target_theta = target_theta + target_omega * dt; //should be in each state
 
@@ -445,8 +518,13 @@ void loop() {
                                      last_pos_right);
     left_voltage = right_voltage + kf_right * target_v_right;
     float right_pwm = (float)MAX_PWM_VALUE * (right_voltage / 8.0); // TODO use actual battery voltage
-
+  if(stopped == true){ //Robot Stopped
+    set_motors_pwm(0,0);
+  }
+  else{
    set_motors_pwm(left_pwm, right_pwm);
+  }
+  //set_motors_pwm(left_pwm, right_pwm);
     // Serial.println();
     delay(target_period_ms);
   } //while(connected == true ) loop
